@@ -1,0 +1,43 @@
+name: Cloud APK Compiler
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Cek Konten Repositori
+      uses: actions/checkout@v4
+
+    - name: Atur Environment Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Unduh Apktool Resmi Terbaru
+      run: |
+        mkdir -p bin
+        wget https://github.com -O bin/apktool.jar
+        wget https://githubusercontent.com -O bin/apktool
+        chmod +x bin/apktool bin/apktool.jar
+        echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
+
+    - name: Jalankan Proses Recompile
+      run: |
+        apktool b Bowmasters_11.5.0_src -o Bowmasters_Modded.apk
+
+    - name: Tanda Tangani APK (Sign APK)
+      run: |
+        sudo apt-get update && sudo apt-get install -y apksigner
+        keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+        apksigner sign --ks debug.keystore --ks-pass pass:android --out Bowmasters_Final.apk Bowmasters_Modded.apk
+
+    - name: Upload APK Hasil Kompilasi
+      uses: actions/upload-artifact@v4
+      with:
+        name: Bowmasters-Mod-APK
+        path: Bowmasters_Final.apk
+
